@@ -166,6 +166,7 @@ command bar at the bottom):
 | enter edit mode / leave edit mode | `Enter` / `Esc` |
 | insert cell above / below; delete (`d d`); undelete (`z`) | `a` / `b` / `d d` / `z` |
 | cut, copy, paste cells | `x` / `c` / `v` |
+| open the command palette and look up for a command |  `Ctrl+Space` |
 | cell to markdown / to code | `m` / `y` |
 | move cells up / down | `Alt+↑` / `Alt+↓` |
 | merge cells / split cell | `M` / `Ctrl+\` |
