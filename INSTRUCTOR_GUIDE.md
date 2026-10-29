@@ -10,16 +10,17 @@ the solutions** and let students run the student versions.
 
 ## The 30-minute contract (why nobody gets left behind)
 
-- **⏱ checkpoints** at every section header tell the room where it should be
-  (Lab 1: §2 at minute 8, §3 at 14, §4 at 20, §5 at 26 — Labs 2/3 analogous).
+- The notebooks no longer carry timing checkpoints: pace the room yourself against the
+  section structure (the whole set still runs in about 30 minutes per lab).
 - **Exercises cannot block.** Each exercise has an automatic checker; on failure the reference
-  implementation takes over silently. Announce the **hard stops** (5/4/6/5 minutes for
-  F1/F2/G1/G2) and enforce them: "not passing? read the hint tonight, move on."
-- **🥾 optional deep dives** (Lab 1 §4.5 3-D landscape and §4.6 hyperparameter corner plot;
+  implementation takes over silently. Give each exercise its small budget (about 5 minutes) and
+  move on: "not passing? read the hint tonight."
+- **Optional deep dives** (Lab 1 §4.5 3-D landscape and §4.6 hyperparameter corner plot;
   Lab 2 latent-field visualizations and §4.3 ML-pathology demos) are fully executed in the
   solutions. If the room is fast, demo them live (the seed-spread demo takes seconds on a GPU);
   otherwise point to the solutions.
-- 🧭 boxes = the novice path; 📐 boxes = rigor reference material for after class.
+- The main line carries both a plain-language explanation and the rigorous statement of each
+  step side by side; the mathematical notes are optional reference material for after class.
 
 ## Suggested running order
 
@@ -39,15 +40,19 @@ GPU, ~2–8 min on a laptop CPU).
   adjust `--account`, `--partition`, `--reservation`, `--nodelist`, and the venv paths
   (`~/envs/fno-gnn`, `~/envs/jax-hedy`). Batch jobs must export
   `PYTHONPATH=$HOME/<repo-root>` for the JAX notebooks (they import the in-repo profiler).
-- **JAX extensions** are optional material for after class; install in a separate venv
+- **JAX extensions** (full mirrors of Labs 1 and 3 in JAX/Equinox/Optax — vmap/jit/pytrees,
+  pytree loss landscapes, padded+masked graph batching; data shipped in
+  `data/burgers_jax.npz` and `data/seismic_jax.npz`, so torch is not needed) are optional
+  material for after class; install in a separate venv
   (`pip install "jax[cuda12]" equinox optax matplotlib ipykernel nbconvert`) — never during
   the session.
 
 ## Timing evidence
 
 The executed solutions carry timing prints; on a MIG 1g.20gb GPU instance of an H100 the full
-set (3 labs + 2 JAX extensions) runs in ~2.5 minutes of compute; the 30-minute budget is
-reading-and-watching time, and the pacing tables account for that.
+set (3 labs + Darcy scale-up + the 4 JAX notebooks — solutions and students) runs in ~25 minutes
+of compute (labs 104+159+49 s, Darcy ~9 min, JAX FNO 128 s / GNN 93 s, students ~same); the
+30-minute budget is reading-and-watching time, and the pacing tables account for that.
 
 ## Scale-up extension (optional, after class)
 

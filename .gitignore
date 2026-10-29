@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+reports/
+logs/
+*.out
+*.err
+.DS_Store

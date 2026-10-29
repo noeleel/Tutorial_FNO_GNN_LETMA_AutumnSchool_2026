@@ -1,0 +1,226 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{titlesec}
+\lstset{basicstyle=\ttfamily\small,frame=single,framerule=0.3pt,columns=fullflexible,breaklines=true}
+\titleformat{\section}{\Large\bfseries\color{black!80}}{}{0pt}{}
+\titleformat{\subsection}{\large\bfseries\color{black!70}}{}{0pt}{}
+
+\newcommand{\labq}[1]{\medskip\noindent\textbf{\textcolor{black!55}{Scientific question.}} \textit{#1}\par}
+\newcommand{\exo}[2]{\medskip\noindent\textbf{Exercise #1 (#2).}\ }
+
+\title{\vspace{-1.2cm}\textbf{LETMA 2026 Summer School}\\[2pt]
+\textbf{Machine Learning on Geophysical Data --- Hands-on Labs}}
+\author{\small LETMA 2026 Summer School}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-6mm}
+
+\section*{Overview}
+Three 30-minute labs, each a complete \emph{question $\rightarrow$ hypotheses $\rightarrow$ data $\rightarrow$ network $\rightarrow$ loss $\rightarrow$ evaluation} loop on geophysical data:
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Lab} & \textbf{Method} & \textbf{Data} & \textbf{Failure mode studied}\\
+\midrule
+1. FNO for Burgers & Fourier Neural Operator & 1-D viscous Burgers & the loss landscape and optimizers\\
+2. FFNO for infrasound & Factorized FNO & boundary-layer atmospheres & ML pathologies (seeds, imbalance, shift)\\
+3. GNN for a sensor network & Graph Neural Network & synthetic seismic picks & oversmoothing\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{How to work.} Each lab runs top to bottom.
+Every exercise has an automatic checker: if your attempt fails, the reference implementation
+takes over and \emph{the lab continues} --- an exercise can cost you minutes, never the lab.
+Every assumption is stated as a numbered hypothesis (H1, H2,~\ldots) \emph{before} being used;
+the mathematical notes carry the rigorous statements and are optional reading.
+Each notebook exists in a \texttt{*\_student} version (you run it) and a fully executed
+\texttt{*\_solution} version (every figure and animation already in it).
+
+\section{Lab 1 --- Fourier Neural Operator for the 1-D Burgers equation}
+
+\labq{Can a network learn the \emph{solution operator} of a PDE --- the map
+$G^\dagger: u_0 \mapsto u(\cdot,T)$ --- and what do the training loss and its hyperparameters
+do to what is learned?}
+
+\textbf{What will be done.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item \textbf{The problem, with every hypothesis (H1--H7).} The time-$T$ map of viscous Burgers
+on $[0,1)$; inputs from a Gaussian random field; data distributions and animated PDE dynamics.
+\item \textbf{The one new idea: spectral convolution.} You check the spectral decay of the data
+(H7) and the mode-truncation experiment, then implement the spectral convolution yourself.
+\item \textbf{Assemble the FNO and train it.} Lift $\rightarrow$ spectral blocks $\rightarrow$
+project; training is animated prediction-by-prediction on unseen fields.
+\item \textbf{The loss, its hyperparameters, its landscape.} Loss-family and weight-decay sweeps;
+the \emph{animated optimizer race} on a 2-D slice of the true loss landscape, run to the trained
+loss $L^*$; the two-minima experiment; the hyperparameter corner plot.
+\item \textbf{Evaluate, super-resolve, transfer.} Test error, and the zero-shot evaluation of
+the model trained at $N{=}64$ directly at $N{=}256$.
+\end{enumerate}
+
+\exo{F1}{5 min, checker + fallback}Implement the spectral convolution
+$(Kv)(x)=\sum_{k<m} R[k]\,\hat v[k]\,e^{2\pi ikx}$: one real FFT, a mode-by-mode complex matrix
+product, one inverse real FFT. \emph{Question to answer:} why does keeping $m{=}16$ modes lose
+almost nothing on this data?
+\par\exo{F2}{5 min}Assemble the full forward pass
+$a(x)\to P \to$ blocks $\to Q \to u(x)$, $v_{\ell+1}=\mathrm{GELU}(K_\ell v_\ell + W_\ell v_\ell)$.
+\emph{Question:} where is the computation happening --- in physical space or in the learned latent
+space of width 32?
+
+\textbf{Questions the experiments answer.} Does Adam reach the trained loss faster than SGD with
+momentum (and by what factor)? Do two random seeds end in the same minimum? Which hyperparameter
+(modes, width, layers) buys the most accuracy at fixed budget? Does the operator trained at
+$N{=}64$ work at $N{=}256$ without retraining --- and why?
+
+\section{Lab 2 --- Factorized FNO for infrasound boundary-layer propagation}
+
+\labq{A few ground receivers record infrasound from an explosion at $2$--$11$ km range. The
+signals were shaped by the effective sound-speed profile $c_{\mathrm{eff}}(z)$ of the atmospheric
+boundary layer ($z\in[0,2]$~km) --- can a network predict the recorded waveforms directly from
+that profile, and can we keep such an operator affordable?}
+
+\textbf{What will be done.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item \textbf{The physics, with every hypothesis (H1--H13).} A transparent parabolic-equation
+solver; an \emph{animated wavefield} for one atmosphere; ray tracing and a hodograph, with the
+input profile shown vertically (altitude on the $y$-axis, celerity on the $x$-axis) and the
+recorded traces at their true arrival times.
+\item \textbf{The learning problem.} 256 synthetic atmospheres (200/28/28 split);
+profile in, \emph{four} ground traces out, predicted jointly in one evaluation.
+\item \textbf{The FFNO.} The factorized spectral layer
+$(Kv)^{\wedge}=R_x[k_x]\hat v+R_y[k_y]\hat v$ (tensor rank-1 constraint, H13); training with the
+waveform-emerging animation; where the computation happens: the learned latent space between
+the profile encoder and the waveform readout.
+\item \textbf{The loss, its landscape, the optimizer race.} Loss family and weight decay on this
+task; the race to the trained loss on the true landscape slice.
+\item \textbf{Overfitting under small data:} the same model trained on eight atmospheres
+only --- the training/validation split is the instrument that catches it.
+\item \textbf{Evaluate on unseen atmospheres:} held-out profiles and all four receivers.
+\end{enumerate}
+
+\exo{F2}{4 min, checker + fallback}Implement \texttt{signal\_spectrum} (two NumPy calls) and
+check H4/H13 yourself: where does the energy of a recorded trace live in frequency, and how many
+Fourier time modes cover the band?
+
+\section{Lab 3 --- Graph Neural Networks: learning on an irregular sensor network}
+
+\labq{A seismic network is a handful of stations scattered over a map --- not a grid, not always
+the same stations, in no meaningful order. How do we make a network respect that geometry,
+remain correct when stations drop out, and avoid the failure mode that plagues deep graph
+models: oversmoothing?}
+
+\textbf{What will be done.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item \textbf{How the graph is constructed.} Nodes = the stations that recorded the event
+(a random subset, 0--30\% down, H3); edges = $k$-nearest neighbours ($k{=}6$); features = relative
+positions and arrival times (H6); the \emph{animated k-NN construction}, node by node.
+\item \textbf{Message passing, defined precisely.}
+$m_{ij}=M_\theta(h_i,h_j,p_j-p_i,\lVert p_j-p_i\rVert)$,
+$a_i=\frac{1}{|\mathcal N(i)|}\sum_{j}m_{ij}$, $h_i\leftarrow h_i+U_\theta(h_i,a_i)$;
+the hop-by-hop information-spreading animation.
+\item \textbf{Oversmoothing, with depth.} The spectrum of the smoothing operator $P=D^{-1}A$:
+each mode decays at its own geometric rate $(1-\lambda_k)^\ell$, only the mean survives; the
+three-panel animation (station colors, the state of \emph{every} node collapsing to the mean, the
+Dirichlet energy); pure averaging vs.\ our residual layer; the depth experiment (train 1, 2, 4,
+8, 16 layers).
+\item \textbf{Train the locator} and watch \emph{one} held-out epicentre converge to the truth,
+epoch by epoch.
+\item \textbf{Evaluate in kilometres}, against a graph-free MLP baseline and as a function of
+the azimuthal gap.
+\end{enumerate}
+
+\exo{G1}{6 min, checker + fallback}Implement the message and the forward pass of one
+message-passing layer (mean aggregation is provided by the base class).
+\par\exo{G2}{5 min}Assemble the full locator: encode $\rightarrow$ 4 layers $\rightarrow$
+mean-pool $\rightarrow$ decode the hypocentre.
+
+\textbf{Questions the experiments answer.} Why must the aggregation be a mean/sum (permutation
+invariance)? Why does the model still work when 8 of 30 stations are down, while a fixed-size
+vector MLP pays for it? At what depth do node states become interchangeable, and how do you
+diagnose it with one scalar (the Dirichlet energy)?
+
+\section*{Optional extensions (after class)}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+\item \textbf{Darcy scale-up:} the same operator philosophy on a 2-D elliptic PDE --- a small
+factorized FNO2d, 200 epochs on a 2304-pair database shipped with the repo.
+\item \textbf{Labs 1 and 3 reimplemented in JAX} (Equinox + Optax): the same science, the
+functional programming model ($\texttt{vmap}$, $\texttt{jit}$, pytree loss landscapes,
+padded-and-masked graph batching).
+\end{itemize}
+
+\section*{Practicalities}
+Notebooks run on the Hedy cluster (a MIG slice of an H100 is enough) or on any laptop CPU;
+no internet is needed and all data are generated by the shipped solvers (or shipped as arrays
+for the JAX extensions). The executed
+\texttt{*\_solution} notebooks contain every animation and figure.
+
+\subsection*{On Hedy: one hop, the GPU, and Euporie}
+\begin{lstlisting}
+ssh -Y hedy        # the single hop (-Y: X11 forwarding for live plots)
+
+# interactive GPU session on a MIG slice - Slurm drops you ON the node,
+# no second ssh needed:
+srun --pty --account=m26266 --partition=gpu --reservation=test_mig_letma \
+     --nodelist=m-gpu[07-08] --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
+     --nodes=1 --ntasks=1 --cpus-per-task=8 --time=01:00:00 bash
+
+# then, ON the GPU node: first CHECK YOUR SLICE - one MIG device with ~20 GB:
+nvidia-smi
+#   MIG devices:
+#   GPU  GI  CI  MIG |              Shared Memory-Usage
+#     0   3   0   0  |               9MiB / 20096MiB     <- your 1g.20gb slice
+# (if the MIG section is absent or shows another size, exit and resubmit the srun)
+
+source /home/projects/m26266/letma2026-ml-labs/env/fno-gnn/bin/activate
+# (or your own venv: python3 -m venv ~/envs/fno-gnn && source ~/envs/fno-gnn/bin/activate
+#                   pip install -r /home/projects/m26266/letma2026-ml-labs/requirements.txt)
+rsync -a --exclude env /home/projects/m26266/letma2026-ml-labs/ ~/letma2026-ml-labs/
+
+cd ~/letma2026-ml-labs/notebooks/labs
+jupyter lab                       # browser interface
+# ...or, entirely in the terminal:
+euporie-notebook --kernel-name python3 lab_fno_student.ipynb
+# optional, with the -Y forwarding: pop-up matplotlib windows instead of inline plots
+LAB_PLOT_MODE=tk euporie-notebook --kernel-name python3 lab_fno_student.ipynb
+\end{lstlisting}
+
+\textbf{Euporie quick reference} (verified against the installed version; the \texttt{python3}
+kernel is the activated venv's interpreter; the JAX extensions use the sibling venv
+\texttt{env/jax-hedy}):
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Navigate} & \texttt{Up/Down} (or \texttt{j/k}) select cells; \texttt{Home/End};
+  \texttt{PgUp/PgDn} ($\pm$5 cells)\\
+\textbf{Run} & \texttt{Ctrl+Enter} run cell; \texttt{Shift+Enter} run and select next;
+  \texttt{Alt+Enter} run and insert below\\
+\textbf{Edit} & \texttt{Enter} enter edit mode; \texttt{Esc} leave;
+  \texttt{Ctrl+\textbackslash} split cell; \texttt{M} merge cells\\
+\textbf{Cells} & \texttt{a}/\texttt{b} insert above/below; \texttt{d d} delete; \texttt{z} undelete;
+  \texttt{x}/\texttt{c}/\texttt{v} cut/copy/paste\\
+\textbf{Cell type} & \texttt{m} to markdown; \texttt{y} to code\\
+\textbf{Move} & \texttt{Alt+Up}/\texttt{Alt+Down} move cells\\
+\textbf{Outputs} & \texttt{w} expand/collapse; \texttt{W} wrap; \texttt{l} line numbers\\
+\textbf{Kernel} & \texttt{i i} interrupt; \texttt{0 0} restart\\
+\textbf{File} & \texttt{Ctrl+S} save; \texttt{Alt+S} save as; \texttt{Ctrl+O} open;
+  \texttt{Ctrl+W} close tab\\
+\textbf{Quit} & \texttt{Ctrl+Q} (prompts to save unsaved changes)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\texttt{Tab} cycles the focus between the notebook, the side pane and the command bar at the
+bottom (where less common actions, e.g.\ \texttt{run-all-cells}, can be typed). Figures render
+inline --- terminal graphics on Kitty/Sixel-capable terminals, character previews elsewhere.
+
+\end{document}

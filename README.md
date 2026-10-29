@@ -6,7 +6,7 @@ Three self-contained, 30-minute lab notebooks for a summer-school audience that 
 **complete newcomers to machine learning** and **rigorous mathematicians**: every assumption is
 stated as a numbered hypothesis (H1, H2, …) before it is used, every exercise is fail-safe
 (automatic checker + reference fallback), and every lab is driven by animations — from PDE
-dynamics and **favourable/unfavourable infrasound ducting** (wavefields, rays, hodographs) to
+dynamics and **boundary-layer infrasound propagation** (wavefields, rays, hodographs) to
 **animated loss landscapes with multiple minima, optimizer races to the final loss, and the
 Dirichlet-energy collapse of deep GNNs**.
 
@@ -16,10 +16,17 @@ Dirichlet-energy collapse of deep GNNs**.
 | **2 · [FFNO for infrasound](notebooks/labs/lab_ffno_infrasound_student.ipynb)** | Can a network predict ground waveforms from the boundary-layer profile that shaped them? | Factorized FNO (Tran et al., ICLR 2023) | narrow-angle parabolic-equation solver, synthetic atmospheres | implement the trace spectrum |
 | **3 · [GNN for a sensor network](notebooks/labs/lab_gnn_student.ipynb)** | How do we learn on stations scattered on a map — any number of them, some always down? | Graph Neural Network (PyTorch Geometric) | synthetic seismic network with station dropout | implement the message-passing layer |
 | **Extension · [Darcy scale-up](notebooks/extensions/scaleup_darcy_fno2d.ipynb)** | The same method, long-schedule regime | **small FFNO2d** (123k params) × **200 epochs** | **2304 pre-generated 96×96 Darcy pairs** (shipped in `data/`) | — |
+| **Extension · [Lab 1 in JAX](notebooks/extensions/jax_fno_student.ipynb)** | The same FNO lab, in the other framework | JAX + Equinox + Optax (vmap, jit, pytree landscapes) | Lab 1's Burgers samples (shipped as `data/burgers_jax.npz`) | `SpectralConv1d` + the forward pass |
+| **Extension · [Lab 3 in JAX](notebooks/extensions/jax_gnn_student.ipynb)** | The same GNN lab, without PyTorch Geometric | JAX + Equinox + Optax (padded + masked batching) | the same seismic events (shipped as `data/seismic_jax.npz`) | masked mean-aggregation + the full locator |
 
 Each lab exists in two versions: `*_student.ipynb` (exercises with `TODO`s) and
 `*_solution.ipynb` (executed end-to-end, all figures and animations embedded — open it to see
 everything without running a single cell).
+
+**Handouts.** [`docs/LETMA2026_labs_handout.pdf`](docs/LETMA2026_labs_handout.pdf) — a printable
+summary of what will be done in each lab, with the scientific question and the exercises.
+[`docs/LETMA2026_solutions_handoff.pdf`](docs/LETMA2026_solutions_handoff.pdf) — the instructor
+handoff: exercise solutions and the numbers every run reproduces (LaTeX sources alongside).
 
 ---
 
@@ -44,26 +51,23 @@ points**, so the model trained at $N=64$ evaluates zero-shot at $N=256$ with the
 |---|---|
 | ![Optimizer race](docs/images/lab1_optimizer_race.png) | ![Corner plot](docs/images/lab1_corner_plot.png) |
 
-**Lab 2 — favourable vs unfavourable atmospheres, from three complementary viewpoints.**
-A **favourable** boundary layer (surface faster than the air above) traps infrasound; an
-**unfavourable** one lets it escape. Top: the input profiles (vertical: altitude on $y$, celerity
-on $x$) and the ray fans they produce — 23 ground returns vs 0. Bottom: the same story in the
-**hodograph** (rescaled traces stacked by receiver range, with the ray-predicted arrival times)
-and in the value distributions of inputs and outputs.
+**Lab 2 — one operator, profile in → waveforms out, from three complementary viewpoints.**
+Top: the input profile (vertical: altitude on $y$, celerity on $x$) and the ray fan it produces.
+Bottom: the **hodograph** (each recorded trace at its own absolute arrival times, with the
+ray-predicted arrivals) and the value distributions of inputs and outputs.
 
 | | |
 |---|---|
 | ![Vertical profiles](docs/images/lab2_vertical_profiles.png) | ![Ray tracing](docs/images/lab2_raytracing.png) |
 | ![Hodograph](docs/images/lab2_hodograph.png) | ![Distributions](docs/images/lab2_distributions.png) |
 
-The FFNO predicts **all four ground receivers jointly, in one evaluation**. Inside the network:
-the encoder compresses each atmosphere into a 16-number code (correlating −0.56 with physical
-favourability), and the spectral blocks' **learned Fourier weights** concentrate on the
-infrasound band — a learned band-pass, with the input profile shown beside every prediction.
+The FFNO predicts **all four ground receivers jointly, in one evaluation** — the spectrum of a
+recorded trace (Exercise F2) confirms the band the operator must reproduce, and every held-out
+prediction comes with its input profile.
 
 | | |
 |---|---|
-| ![Fourier weights](docs/images/lab2_fourier_weights.png) | ![Held-out waveforms](docs/images/lab2_test_profiles.png) |
+| ![Trace spectrum](docs/images/lab2_spectra.png) | ![Held-out waveforms](docs/images/lab2_test_waveforms.png) |
 
 **Lab 3 — a graph built by k-NN, and its specific failure mode, quantified.**
 Left: the input distributions (per-event station counts change the graph size every event — H3).
@@ -72,7 +76,7 @@ collapses*, with the energy curve animating alongside the map.
 
 | | |
 |---|---|
-| ![Lab 3 distributions](docs/images/lab3_distributions.png) | ![Oversmoothing](docs/images/lab3_oversmoothing_quantified.png) |
+| ![Lab 3 distributions](docs/images/lab3_distributions.png) | ![Smoothing-operator spectrum](docs/images/lab3_spectrum.png) |
 
 The notebook itself animates, step by step, **how k-nearest-neighbours constructs the graph node
 by node** (candidates in grey, the 6 selected edges in red, committed edges in blue).
@@ -102,19 +106,17 @@ interpolation) live **inside the executed solution notebooks**; a few legacy GIF
 
 ## Pedagogical design (why a mixed audience can follow all of it)
 
-- **🧭 novice track / 📐 rigor track.** Grey 🧭 boxes define every ML term before it is used;
-  📐 boxes state each assumption as a numbered hypothesis — the Burgers GRF law (H1), the
+- **Plain-language main line / optional mathematical notes.** The main line defines every ML
+  term before it is used; the mathematical notes state each assumption as a numbered hypothesis —
+  the Burgers GRF law (H1), the
   paraxial solver's approximations (H1–H8), the GNN velocity model and pick noise (H1–H7), the
   encoder's information bottleneck (H14), the Darcy data law (H1–H5)… Nothing is used before it
   is defined, and every hypothesis that can be checked on data *is* checked (spectral decay,
   band content, ray vs PE arrivals).
-- **A checked 30-minute critical path.** ⏱ checkpoints at each section header tell students
-  where they should be; exercises have hard-stop instructions and **cannot block anyone**:
+- **Exercises that cannot block anyone:**
   an automatic checker compares against a reference, and on failure the reference takes over.
-- **🥾 Optional deep dives** (3-D landscapes, corner plots, Fourier-weight dissection, the
-  classic ML pathologies — non-convexity measured across 5 seeds, data imbalance, overfitting
-  under 8 samples, distribution shift with an out-of-ensemble profile) are executed in the
-  solutions and skippable live.
+- **Optional deep dives** (3-D landscapes, corner plots, the overfitting demo under 8 samples)
+  are executed in the solutions and skippable live.
 - **Honesty as a teaching tool.** Every number the labs report is one the notebooks actually
   produced; the notebooks say which conclusions are robust and which are visualization-level.
 
@@ -134,64 +136,66 @@ Open `notebooks/labs/lab_fno_student.ipynb` and run top to bottom. The three lab
 their data on the fly (Burgers pseudo-spectral solver, infrasound parabolic-equation marcher,
 synthetic seismic picks) — no downloads. The Darcy scale-up loads its 2304-pair 96×96 database from the shipped
 `data/darcy96_big.pt` (half precision, 85 MB; regenerating it requires `scipy` and ~2 minutes).
+The two JAX extensions read `data/burgers_jax.npz` (153 kB: Lab 1's Burgers samples, same seeds,
+at N=64 and N=256) and `data/seismic_jax.npz` (0.4 MB: Lab 3's seismic events as padded arrays) —
+so they need **neither torch nor PyG**, only JAX (regenerate the files with
+`python scripts/make_burgers_npz.py` and `python scripts/make_seismic_npz.py` in the PyTorch
+environment).
 
-On the Hedy cluster everything is pre-staged in the account's shared folder
-(`/home/projects/m26266/letma2026-ml-labs`, repo + venvs). Re-validating the whole set is a
-**single command after a single SSH hop** — `sbatch slurm/test_all_mig.sbatch` from that folder
-(see `slurm/PROCEDURE_TESTS.md`) — with the mandatory MIG directives
-(`--nodelist=m-gpu[07-08]`, `--reservation=test_mig_letma`,
-`--gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1`, `--account=m26266`) already in the script.
+## On the Hedy cluster (school sessions)
 
-## For participants: using this environment on Hedy
-
-Hedy homes are **private** (and scratch/save are per-user), so participants do **not** — and
-should not — run the instructor's `~/envs`. The supported route is **self-service**, and it has
-been executed end-to-end on the cluster:
+The labs are pre-staged in the account's shared folder. One hop, X11 forwarding on:
 
 ```bash
-# once, on the login node (~6 min, mostly the torch wheel download):
-git clone <this-repository> && cd letma2026-ml-labs
-bash scripts/setup_participant.sh          # builds YOUR OWN ~/envs/fno-gnn from the
-                                           # pinned requirements, registers the Jupyter
-                                           # kernel 'fno-gnn', smoke-tests the imports
-source ~/envs/fno-gnn/bin/activate
-# then request your GPU (the school's MIG allocation) and launch jupyter from the job
+ssh -Y hedy                     # the single hop (-Y: X11 forwarding for live plots)
+
+# interactive GPU session on a MIG slice — Slurm drops you ON the node, no second ssh:
+srun --pty --account=m26266 --partition=gpu --reservation=test_mig_letma \
+     --nodelist=m-gpu[07-08] --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
+     --nodes=1 --ntasks=1 --cpus-per-task=8 --time=01:00:00 bash
+
+# then, on the GPU node: first CHECK YOUR SLICE — you should see one MIG device
+# with ~20 GB of memory:
+nvidia-smi
+#   MIG devices:
+#   GPU  GI  CI  MIG |              Shared Memory-Usage
+#     0   3   0   0  |               9MiB / 20096MiB     <- your 1g.20gb slice
+# (if the MIG section is absent or shows another size, exit and resubmit the srun)
+
+source /home/projects/m26266/letma2026-ml-labs/env/fno-gnn/bin/activate   # or your own venv
+rsync -a --exclude env /home/projects/m26266/letma2026-ml-labs/ ~/letma2026-ml-labs/  # once
+cd ~/letma2026-ml-labs/notebooks/labs
+jupyter lab                      # browser interface
+# ...or, entirely in the terminal:
+euporie-notebook --kernel-name python3 lab_fno_student.ipynb
+# optional, with the -Y forwarding: pop-up matplotlib windows instead of inline plots
+LAB_PLOT_MODE=tk euporie-notebook --kernel-name python3 lab_fno_student.ipynb
 ```
 
-The script picks Hedy's module Python (3.12.4) automatically, verifies ≥ 3.10, installs from
-`requirements.txt`, and prints a smoke test (`torch`, `torch_geometric`, `matplotlib`) — CUDA
-correctly reads `False` on the login node and `True` inside a GPU job. **Validated on the
-cluster**: a fresh participant venv (torch 2.15+cu132, PyG 2.8.1) imports cleanly; participants
-may resolve slightly newer wheels than the instructor's validated env — every API used in the
-labs is stable across these versions.
+**Euporie quick reference** (verified against the installed version — navigate with `↑/↓`
+or `j/k`, `Home/End`, `PgUp/PgDn`; `Tab` cycles the focus between notebook, side pane and the
+command bar at the bottom):
 
-**Or use the shared environment directly (zero setup).** Everything is pre-staged in the
-account's shared folder on Hedy, `/home/projects/m26266/letma2026-ml-labs` (repo +
-ready-made venvs, group-readable):
+| action | keys |
+|---|---|
+| run the selected cell / run and go to next | `Ctrl+Enter` / `Shift+Enter` |
+| run and insert a cell below | `Alt+Enter` |
+| enter edit mode / leave edit mode | `Enter` / `Esc` |
+| insert cell above / below; delete (`d d`); undelete (`z`) | `a` / `b` / `d d` / `z` |
+| cut, copy, paste cells | `x` / `c` / `v` |
+| cell to markdown / to code | `m` / `y` |
+| move cells up / down | `Alt+↑` / `Alt+↓` |
+| merge cells / split cell | `M` / `Ctrl+\` |
+| expand or collapse output; wrap output; line numbers | `w` / `W` / `l` |
+| interrupt kernel / restart kernel | `i i` / `0 0` |
+| save / save as / open / new notebook / close tab | `Ctrl+S` / `Alt+S` / `Ctrl+O` / `Ctrl+N` / `Ctrl+W` |
+| quit (prompts to save unsaved changes) | `Ctrl+Q` |
 
-```bash
-source /home/projects/m26266/letma2026-ml-labs/scripts/use_instructor_env.sh
-cp /home/projects/m26266/letma2026-ml-labs/notebooks/labs/lab_fno_student.ipynb ~/my_lab.ipynb
-euporie-notebook --kernel-name python3 ~/my_lab.ipynb
-```
-
-The `python3` kernel IS the validated interpreter (the shared venv's own — no registration
-needed for the three labs; one registration line for the JAX extensions, in the script
-header). The shared environment is read-only for participants: no pip installs. It was
-re-validated end-to-end from the shared location on the cluster (labs + Darcy scale-up + JAX
-executed on a GPU with the shared venvs, and Euporie rendering a lab in its TUI).
-
-Two *alternative* mechanisms, if the school prefers them (not required):
-
-- **Apptainer/Singularity** (installed system-wide on Hedy): build one `.sif` with
-  `torch + torch_geometric + jupyter` and share it through a *group-readable* location.
-  Blocked today by the missing piece below.
-- **A shared read-only venv at a common path**: venvs work for any user if the path is common
-  and permissions allow; the natural place would be an account-shared directory
-  (`/save-rhet/…`) for the school's Slurm account — **worth requesting from the mesocentre
-  admins**, who could also host the Apptainer image and the pip cache to spare 48
-  simultaneous downloads. Opening the instructor's `$HOME` with `chmod a+rX` also works
-  technically but is poor cluster etiquette and not recommended.
+Less common actions can be typed in the command bar (Tab to focus it). Figures render inline —
+terminal graphics on Kitty/Sixel-capable terminals, character previews elsewhere. The
+`python3` kernel is the activated venv's interpreter. The JAX extensions use the sibling venv
+`env/jax-hedy` the same way. `slurm/PROCEDURE_TESTS.md` documents the headless re-validation
+(`sbatch slurm/test_all_mig.sbatch`).
 
 ## Requirements and measured hardware footprint
 
@@ -208,9 +212,9 @@ extensions, separate venv advised).
 | GPU memory | — | **≥ 4 GB** — everything runs on a 19.6 GB `MIG 1g.20gb` instance |
 | System RAM | **~1 GB free** (labs), **~3 GB** (scale-up: 1200×2×64² float32) | ~1–3 GB |
 | Disk | ~150 MB repo (incl. the 85 MB shipped Darcy database) | same |
-| Lab 1 / 2 / 3 runtime | ≈ 8 / 6 / 2 min (≈ 2–3 min on the 30-min critical path) | **78 s / 39 s / 47 s** |
+| Lab 1 / 2 / 3 runtime | ≈ 8 / 10 / 2 min | **104 s / 159 s / 49 s** |
 | Darcy scale-up (200 epochs) | hours — set `DARCY_EPOCHS=10`–`20` or read the solution | **3.0 min** (full H100) / ~10 min (`MIG 1g.20gb`) |
-| JAX extensions | n/a | 26 s + 9 s |
+| JAX extensions (full FNO + GNN mirrors) | ≈ 8 / 6 min on CPU | **128 s + 93 s** (solution notebooks; students ≈ same) |
 
 Nothing requires internet access at run time. Results are deterministic (fixed seeds); GPU and
 CPU runs agree to ~3 decimals (e.g. Darcy test rel-L2 0.0405 CPU vs 0.0404 GPU).
@@ -221,33 +225,44 @@ CPU runs agree to ~3 decimals (e.g. Darcy test rel-L2 0.0405 CPU vs 0.0404 GPU).
 letma2026-ml-labs/
 ├── README.md                     ← this file
 ├── scripts/
-│   └── setup_participant.sh      ← one-time participant setup (Hedy or laptop)
+│   ├── setup_participant.sh      ← one-time participant setup (Hedy or laptop)
+│   ├── make_burgers_npz.py        ← regenerates data/burgers_jax.npz  (torch env, run once)
+│   └── make_seismic_npz.py        ← regenerates data/seismic_jax.npz  (torch env, run once)
 ├── INSTRUCTOR_GUIDE.md           ← pacing, checkpoints, fallbacks, cluster notes
 ├── requirements.txt               ← install file (+ optional extras commented)
 ├── data/
-│   └── darcy96_big.pt            ← pre-generated 96×96 Darcy database (2304 pairs, 85 MB, fp16)
+│   ├── darcy96_big.pt            ← pre-generated 96×96 Darcy database (2304 pairs, 85 MB, fp16)
+│   ├── burgers_jax.npz           ← Lab 1's Burgers samples as plain arrays (JAX extension, 153 kB)
+│   └── seismic_jax.npz           ← Lab 3's seismic events as plain arrays (JAX extension, 0.4 MB)
 ├── fno_tuto/                      ← Burgers/Darcy data generators, losses, FNO/FFNO models
 │   └── infrasound.py              ← parabolic-equation solver + synthetic atmospheres
 ├── gnn_tuto/                      ← seismic simulator, graph construction, GNN models, checkers
 ├── hedy_euporie/                  ← tiny optional session-profiler used by the labs
 ├── notebooks/
 │   ├── labs/                      ← the three 30-minute labs (student + executed solution)
-│   └── extensions/                ← Darcy scale-up + JAX reimplementations
+│   └── extensions/                ← Darcy scale-up + the two full JAX reimplementations
 ├── docs/images/                   ← README illustrations (extracted from the executed solutions)
 └── slurm/                         ← single-hop validation scripts (see PROCEDURE_TESTS.md)
 ```
 
 ## Reproducibility status
 
-All notebooks were executed end-to-end **without a single error**, twice — once on CPU (laptop)
-and once on a GPU cluster (MIG 1g.20gb instance of an H100, Slurm reservation). Key reproduced
-numbers: Burgers test rel-$L^2$ 0.076 (zero-shot at $N{=}256$: 0.073); two-seed Burgers minima
-0.083/0.084 with three Adam initializations in separate basins; infrasound test 0.16, code–
-favourability correlation −0.56, ray tracing 23 vs 0 ground returns, Fourier-weight peak at
-0.096 Hz (inside the 0.04–0.45 Hz band); GNN epicentral median 4.87 km vs MLP baseline 6.92 km;
+All notebooks were executed end-to-end **without a single error** on a GPU cluster
+(MIG 1g.20gb instance of an H100, Slurm reservation). Key reproduced numbers: Burgers test
+rel-$L^2$ 0.076 (zero-shot at $N{=}256$: 0.0735); the optimizer race now **reaches the trained
+loss** — Adam in 79 steps, SGD+momentum in 604, plain SGD budget-limited; infrasound
+(boundary-layer problem, $z\in[0,2]$ km, receivers at 2–11 km): test rel-$L^2$ 0.266, ray
+tracing and hodograph on absolute-time axes; GNN epicentral median 4.87 km
+vs MLP baseline 6.92 km, smoothing-operator spectrum $\rho=0.844$ predicting the oversmoothing
+pace;
 Darcy scale-up: a 123k-parameter FFNO2d, 200 epochs on 2304 pairs at 96×96, test rel-$L^2$
 0.0083 in 3 GPU minutes on a full H100 (measured; ~10 min on the MIG slice); learned x/y Fourier
-responses equal to 3%, as the isotropic law predicts.
+responses equal to 3%, as the isotropic law predicts. The two JAX extensions (full mirrors of
+Lab 1 and Lab 3 in JAX/Equinox/Optax) reproduce the same physics: FNO val rel-L2 0.0969 / test
+0.0867, zero-shot super-resolution 0.0889 at N=256, Adam arrives at the trained loss while SGD
+crawls, corner-plot best (modes 16, width 48, layers 6) 0.0896; GNN epicentral median 3.05 km vs
+7.04 km for the graph-free MLP baseline — CPU and GPU runs agree to 4 decimals (JAX
+determinism), while PyTorch↔JAX differ by seed noise only.
 
 ## License
 

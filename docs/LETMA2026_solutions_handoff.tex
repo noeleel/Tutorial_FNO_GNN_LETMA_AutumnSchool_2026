@@ -1,0 +1,202 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries\color{black!80}}{}{0pt}{}
+\titleformat{\subsection}{\large\bfseries\color{black!70}}{}{0pt}{}
+\lstset{basicstyle=\ttfamily\small,frame=single,framerule=0.3pt,columns=fullflexible,
+        breaklines=true,escapeinside={(*}{*)}}
+
+\title{\vspace{-1.2cm}\textbf{LETMA 2026 Summer School}\\[2pt]
+\textbf{Machine Learning on Geophysical Data --- Labs: Solutions \& Expected Results}\\[6pt]
+\large Instructor handoff: the answers to the exercises and the numbers every run reproduces}
+\author{\small LETMA 2026 Summer School}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-6mm}
+
+This is the companion of the student handout: for each lab it gives the exercise solutions
+and the expected results. Every number below was produced by executing the
+\texttt{*\_solution} notebooks end to end on a MIG slice (\texttt{1g.20gb}) of an H100 on the
+Hedy cluster; the executed notebooks contain every figure and animation, so any of these
+results can be shown live without re-running a cell.
+
+\section{Lab 1 --- FNO for the 1-D Burgers equation}
+
+\subsection*{Exercise F1 (spectral convolution)}
+\begin{lstlisting}
+def forward(self, x):
+    n = x.shape[-1]
+    xh = torch.fft.rfft(x, dim=1, norm='ortho')       # (B, C, N//2+1)
+    m = min(self.modes, xh.shape[-1])                 # truncation (H7)
+    out = torch.einsum('bik,iok->bok', xh[..., :m], self.weight[..., :m])
+    return torch.fft.irfft(out, n=n, norm='ortho')    # back to physical space
+\end{lstlisting}
+\textbf{Answer to the question.} Keeping $m=16$ modes loses almost nothing because the target
+fields' energy is concentrated in the first Fourier modes (H7, checked on data): mode $m=16$
+already reconstructs a target to $\approx 0.3\%$ relative error.
+
+\subsection*{Exercise F2 (forward pass)}
+Lift $a(x)\oplus x$ to $w=32$ channels ($P$), then four blocks
+$v_{\ell+1}=\mathrm{GELU}(K_\ell v_\ell + W_\ell v_\ell)$, then $Q$ (width $128$) back to one
+channel. \textbf{Answer:} the computation happens in the learned 32-channel latent space
+--- the blocks never see $u$ again after the lift.
+
+\subsection*{Expected results}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+validation rel-$L^2$ (60 epochs, AdamW+cosine) & $\approx 0.083$\\
+test rel-$L^2$ (untouched split) & mean $0.076$, median $0.075$, worst $0.179$\\
+zero-shot super-resolution $N{=}64\to N{=}256$ & $0.073$ (no retraining)\\
+optimizer race to $L^*$ & Adam \textbf{79 steps}, SGD+momentum \textbf{604 steps},\\
+ & plain SGD still far above $L^*$ after 6000 steps\\
+two-seed minima & two distinct minima, three Adam runs fall in separate basins\\
+corner plot (best of 20 configs, 25 epochs) & modes 16, width 48, 6 layers, proj 128 $\to$ $0.090$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Lab 2 --- FFNO for infrasound boundary-layer propagation}
+
+\subsection*{Exercise F2 (signal spectrum)}
+\begin{lstlisting}
+def signal_spectrum(trace, dt):
+    f = np.fft.rfftfreq(len(trace), d=dt)     # frequencies of the rfft bins
+    return f, np.fft.rfft(trace)              # complex spectrum
+\end{lstlisting}
+\textbf{Answer to the question.} The energy of a recorded trace lives inside the band
+$[0.3, 4]$ Hz propagated by the solver (H4); about 64 of the 129 time Fourier modes carry the
+whole band --- exactly the truncation the factorized operator makes (H13).
+
+\subsection*{Expected results}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+demo atmosphere & rays return to the ground ($\approx$19 arrivals within 11 km);\\
+ & hodograph arrivals at $t = r/c_\mathrm{ref} + $ wavelet delay\\
+training (240 epochs, 200 atmospheres) & validation rel-$L^2 \approx 0.30$\\
+test (28 unseen atmospheres) & mean $0.266$, worst $0.597$\\
+loss family & rel-$L^2$ better than MSE on validation (quiet atmospheres served)\\
+overfitting demo (8 atmospheres) & train $0.56$ vs validation $1.31$ (gap $\times 2$)\\
+optimizer race & Adam reaches $L^*$ in $\approx 250$ steps; fixed-step methods\\
+ & remain near $1.0$ (near-silence initialization) after 4000 steps\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Lab 3 --- GNN for a sensor network}
+
+\subsection*{Exercise G1 (message passing)}
+\begin{lstlisting}
+def message(self, h_i, h_j, pos_i, pos_j):
+    rel = pos_j - pos_i
+    return self.msg(torch.cat([h_i, h_j, rel, rel.norm(dim=-1, keepdim=True)], -1))
+def forward(self, h, pos, edge_index):
+    return h + self.upd(torch.cat([h, self.propagate(edge_index, h=h, pos=pos)], -1))
+\end{lstlisting}
+\subsection*{Exercise G2 (the locator)}
+\begin{lstlisting}
+h = self.encoder(data.x)                       # one 64-dim state per station
+for layer in self.layers:                     # 4 message-passing layers
+    h = layer(h, data.pos, data.edge_index)
+pooled = global_mean_pool(h, data.batch)      # invariant event code
+return self.decoder(pooled)                   # normalized hypocentre
+\end{lstlisting}
+
+\subsection*{Expected results}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+smoothing-operator spectrum (demo graph) & $\rho = 0.844$: the slowest non-mean mode keeps\\
+ & $0.51$ of its amplitude at depth 4, $0.066$ at depth 16\\
+depth experiment (validation error) & 1 layer $0.47$ \; 2: $0.43$ \; 4: $0.43$ \; 8: $0.37$ \; 16: $0.39$\\
+locator (60 epochs) & validation $\approx 0.31$ (normalized; $1.0 \sim 20$ km)\\
+epicentral error (50 test events) & median $4.87$ km, mean $5.08$, 90\% $8.23$\\
+graph-free MLP baseline & median $6.92$ km (pays for every missing station)\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Answers to the questions.} The aggregation must be a mean/sum because only those
+treat neighbours unordered (permutation invariance). The GNN survives station dropout because
+the graph and the masked pooling adapt to any node count; the fixed-size MLP has one slot per
+station and loses the information of every station that is down. Node states become
+interchangeable when the Dirichlet energy collapses: one scalar per depth is the diagnostic.
+
+\section{Optional extensions}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+\item \textbf{Darcy scale-up:} a 123k-parameter FFNO2d, 200 epochs on 2304 pairs at $96\times96$:
+test rel-$L^2$ $0.0083$ (MIG, $\approx 9$ min).
+\item \textbf{Labs 1 and 3 in JAX} (Equinox + Optax): FNO val $0.0969$, test $0.0867$,
+zero-shot at $N{=}256$: $0.0889$; GNN epicentral median $3.05$ km vs MLP $7.04$ km. Same
+physics, different framework --- the notebooks need neither torch nor PyG (data shipped as
+arrays).
+\end{itemize}
+
+\section{How to re-run everything}
+
+\subsection*{Connect and work on Hedy (one SSH hop)}
+\begin{lstlisting}
+ssh -Y hedy                       # the single hop (-Y: X11 forwarding)
+
+# either use the pre-built shared environment (nothing to install):
+source /home/projects/m26266/letma2026-ml-labs/env/fno-gnn/bin/activate
+
+# or install the requirements into your own venv:
+python3 -m venv ~/envs/fno-gnn && source ~/envs/fno-gnn/bin/activate
+pip install -r /home/projects/m26266/letma2026-ml-labs/requirements.txt
+
+# copy the labs into YOUR home folder on Hedy (env/ excluded: the venvs are 5+ GB):
+rsync -a --exclude env /home/projects/m26266/letma2026-ml-labs/ ~/letma2026-ml-labs/
+
+# interactive GPU session (Slurm drops you ON the GPU node, no second ssh):
+srun --pty --account=m26266 --partition=gpu --reservation=test_mig_letma \
+     --nodelist=m-gpu[07-08] --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
+     --nodes=1 --ntasks=1 --cpus-per-task=8 --time=01:00:00 bash
+
+# on the GPU node, first CHECK YOUR SLICE - one MIG device with ~20 GB:
+nvidia-smi
+#   MIG devices:
+#   GPU  GI  CI  MIG |              Shared Memory-Usage
+#     0   3   0   0  |               9MiB / 20096MiB     <- your 1g.20gb slice
+# (if the MIG section is absent or shows another size, exit and resubmit the srun)
+
+# open a notebook - either JupyterLab:
+cd ~/letma2026-ml-labs/notebooks/labs && jupyter lab
+# ...or Euporie, the notebook TUI (plain SSH session, no X11, no browser):
+euporie-notebook --kernel-name python3 \
+    ~/letma2026-ml-labs/notebooks/labs/lab_fno_solution.ipynb
+\end{lstlisting}
+Euporie quick reference (verified against the installed version): \texttt{Up/Down} (or
+\texttt{j/k}) select cells, \texttt{Home/End} first/last, \texttt{PgUp/PgDn} $\pm$5;
+\texttt{Enter} enters edit mode, \texttt{Esc} leaves it; \texttt{Ctrl+Enter} runs the selected
+cell, \texttt{Shift+Enter} runs and selects the next, \texttt{Alt+Enter} runs and inserts below;
+\texttt{a}/\texttt{b} insert cells above/below, \texttt{d d} deletes, \texttt{z} undeletes,
+\texttt{x}/\texttt{c}/\texttt{v} cut/copy/paste, \texttt{m}/\texttt{y} set the cell type;
+\texttt{i i} interrupts the kernel, \texttt{0 0} restarts it; \texttt{Ctrl+S} saves,
+\texttt{Ctrl+O} opens, \texttt{Ctrl+Q} quits (prompting to save unsaved changes); \texttt{Tab}
+cycles the focus to the command bar for the rarer actions. Figures render inline (terminal
+graphics on Kitty/Sixel terminals, character previews elsewhere). The \texttt{python3} kernel
+is the activated venv's interpreter --- the validated one. The JAX extensions use the sibling
+venv \texttt{env/jax-hedy} (activate it the same way). To work on a GPU: \texttt{ssh -Y hedy},
+then the interactive session of the listing below starts with
+\texttt{srun --pty ... bash} (Slurm drops you on the GPU node --- one hop, no second
+\texttt{ssh}).
+
+\subsection*{Headless re-validation of the whole set}
+On Hedy, from the shared folder, one command re-executes all six lab notebooks plus the
+extensions headlessly (see \texttt{slurm/PROCEDURE\_TESTS.md}):
+\begin{lstlisting}
+sbatch slurm/test_all_mig.sbatch
+\end{lstlisting}
+Mandatory MIG directives are already in the script. Total measured time: labs
+$\approx 5$ min, Darcy $\approx 9$ min, JAX $\approx 7$ min.
+
+\end{document}

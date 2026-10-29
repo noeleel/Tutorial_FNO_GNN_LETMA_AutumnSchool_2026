@@ -44,12 +44,20 @@ t0=$SECONDS
 echo "=== [torch] scaleup finished in $((SECONDS - t0)) s ==="
 
 echo "=== [jax] env check ==="
-"$ROOT/env/jax-hedy/bin/python" -c "import jax; print('jax', jax.__version__, '| devices', jax.devices(), '| backend', jax.default_backend())"
+"$ROOT/env/jax-hedy/bin/python" -c "import jax, equinox, optax; print('jax', jax.__version__, '| equinox', equinox.__version__, '| optax', optax.__version__, '| devices', jax.devices(), '| backend', jax.default_backend())"
 for nb in jax_fno jax_gnn; do
   echo "=== [jax] executing ${nb}_solution ==="
   t0=$SECONDS
   "$ROOT/env/jax-hedy/bin/jupyter" nbconvert --to notebook --execute --inplace \
       --ExecutePreprocessor.timeout=1200 "notebooks/extensions/${nb}_solution.ipynb" 2>&1 | tail -2
   echo "=== [jax] ${nb} finished in $((SECONDS - t0)) s ==="
+done
+# the student versions too: they exercise the exercise-fallback paths (reference takes over)
+for nb in jax_fno jax_gnn; do
+  echo "=== [jax] executing ${nb}_student (fallback paths) ==="
+  t0=$SECONDS
+  "$ROOT/env/jax-hedy/bin/jupyter" nbconvert --to notebook --execute --inplace \
+      --ExecutePreprocessor.timeout=1200 "notebooks/extensions/${nb}_student.ipynb" 2>&1 | tail -2
+  echo "=== [jax] ${nb} student finished in $((SECONDS - t0)) s ==="
 done
 echo ALL_DONE

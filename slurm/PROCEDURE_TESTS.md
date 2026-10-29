@@ -25,9 +25,12 @@ grep -c Error  /home/projects/m26266/letma2026-ml-labs/letma_tests_<ID>.err  # d
 sacct -j <ID> --format=State,Elapsed -n                                    # COMPLETED + durée
 ```
 
-Durée mesurée (dernière validation, 12 min au total sur une instance MIG `1g.20gb`) :
-labs 64 s + 39 s + 48 s, extension Darcy ~9 min (200 époques), JAX 7 s + 10 s —
-**zéro erreur sur les 6 notebooks**, résultats identiques aux références CPU.
+Durée mesurée (dernière validation, ~25 min au total sur une instance MIG `1g.20gb`) :
+labs 104 s + 159 s + 49 s (le lab 2 a enrichi son apprentissage), extension Darcy ~9 min (200 époques), extensions JAX (versions
+complètes, miroirs des labs 1 et 3) : FNO 128 s + GNN 93 s (solutions) puis 124 s + 88 s
+(étudiants, chemins de repli) — **zéro erreur sur les 10 notebooks** (6 torch + 4 JAX),
+résultats identiques aux références CPU. Les notebooks `jax_*_solution` et `jax_*_student`
+sont réexécutés **sur place** : les sorties GPU restent dans le dossier partagé.
 
 ## Directives MIG impératives (déjà incluses dans test_all_mig.sbatch)
 
@@ -46,7 +49,8 @@ m-gpu08 sont miggués : `--nodelist=m-gpu[07-08]` laisse Slurm choisir le nœud 
 ## Ce que fait le script test_all_mig.sbatch
 1. Exécute les 3 notebooks de lab (solutions) avec `env/fno-gnn` (venv partagé).
 2. Exécute l'extension Darcy (FFNO2d, 200 époques) — le plus long (~9 min sur MIG).
-3. Exécute les 2 notebooks JAX avec `env/jax-hedy`.
+3. Exécute les 4 notebooks JAX (solutions + étudiants) avec `env/jax-hedy` — les données
+   sont dans `data/burgers_jax.npz` et `data/seismic_jax.npz` : pas besoin de torch.
 4. Écrit `ALL_DONE` à la fin ; toute erreur est dans `letma_tests_<ID>.err`.
 Les notebooks exécutés (avec toutes leurs sorties) restent dans le dossier partagé :
 ils peuvent être relus directement ou copiés vers un home personnel.
