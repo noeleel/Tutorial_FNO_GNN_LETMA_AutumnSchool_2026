@@ -105,24 +105,6 @@ interpolation) live **inside the executed solution notebooks**; a few legacy GIF
 
 ---
 
-## Pedagogical design (why a mixed audience can follow all of it)
-
-- **Plain-language main line / optional mathematical notes.** The main line defines every ML
-  term before it is used; the mathematical notes state each assumption as a numbered hypothesis —
-  the Burgers GRF law (H1), the
-  paraxial solver's approximations (H1–H8), the GNN velocity model and pick noise (H1–H7), the
-  encoder's information bottleneck (H14), the Darcy data law (H1–H5)… Nothing is used before it
-  is defined, and every hypothesis that can be checked on data *is* checked (spectral decay,
-  band content, ray vs PE arrivals).
-- **Exercises that cannot block anyone:**
-  an automatic checker compares against a reference, and on failure the reference takes over.
-- **Optional deep dives** (3-D landscapes, corner plots, the overfitting demo under 8 samples)
-  are executed in the solutions and skippable live.
-- **Honesty as a teaching tool.** Every number the labs report is one the notebooks actually
-  produced; the notebooks say which conclusions are robust and which are visualization-level.
-
----
-
 ## Quick start
 
 ```bash
