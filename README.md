@@ -132,28 +132,66 @@ The labs are pre-staged in the account's shared folder. One hop, X11 forwarding 
 ```bash
 ssh -Y hedy                     # the single hop (-Y: X11 forwarding for live plots)
 
-# interactive GPU session on a MIG slice — Slurm drops you ON the node, no second ssh:
-srun --pty --account=m26266 --partition=gpu --reservation=test_mig_letma \
-     --nodelist=m-gpu[07-08] --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
-     --nodes=1 --ntasks=1 --cpus-per-task=8 --time=01:00:00 bash
+# GPU session on a MIG slice: ONE command allocates the slice, forwards X11 and drops
+# you into an interactive shell ON the GPU node:
+salloc \
+    --account=m26266 \
+    --partition=gpu \
+    --reservation=test_mig_letma \
+    --nodelist=m-gpu[07-08] \
+    --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
+    --nodes=1 \
+    --ntasks=1 \
+    --cpus-per-task=8 \
+    --time=01:00:00 \
+    bash -c '
+        NODE=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+        echo "Allocated job: $SLURM_JOB_ID on $NODE"
+        exec ssh -Y -C -t "$NODE" \
+            "srun --jobid=$SLURM_JOB_ID --overlap --ntasks=1 --pty bash -i"
+    '
+# release the allocation afterwards with: scancel <jobid>   (see squeue -u $USER)
 
-# then, on the GPU node: first CHECK YOUR SLICE — you should see one MIG device
+# then, ON the GPU node: first CHECK YOUR SLICE - you should see one MIG device
 # with ~20 GB of memory:
 nvidia-smi
 #   MIG devices:
 #   GPU  GI  CI  MIG |              Shared Memory-Usage
 #     0   3   0   0  |               9MiB / 20096MiB     <- your 1g.20gb slice
-# (if the MIG section is absent or shows another size, exit and resubmit the srun)
+# (if the MIG section is absent or shows another size, exit and resubmit)
 
 source /home/projects/m26266/letma2026-ml-labs/env/fno-gnn/bin/activate   # or your own venv
 rsync -a --exclude env /home/projects/m26266/letma2026-ml-labs/ ~/letma2026-ml-labs/  # once
 cd ~/letma2026-ml-labs/notebooks/labs
-jupyter lab                      # browser interface
-# ...or, entirely in the terminal:
+# Hedy has no SSH port forwarding, so there is no browser interface: use euporie,
+# the notebook terminal interface (on your own machine, `jupyter lab` works normally)
 euporie-notebook --kernel-name python3 lab_fno_student.ipynb
 # optional, with the -Y forwarding: pop-up matplotlib windows instead of inline plots
+# (tk needs a WORKING X display: the labs test it and fall back to inline plots automatically)
 LAB_PLOT_MODE=tk euporie-notebook --kernel-name python3 lab_fno_student.ipynb
 ```
+
+**Launch time: ~5 s on a warmed node, 1–2 min on a cold one.** Everything (euporie, jupyter,
+torch, numpy, matplotlib, …) is paged in from the cluster's shared filesystem on the first
+launch of a node, and the screen just shows `Loading…` / `No Kernel` meanwhile — this is not
+a freeze. The nodes are warmed up once before the session (the Linux page cache is shared
+by all users of a node):
+
+```bash
+ssh hedy                # no -Y needed here: this submits a batch job, nothing is displayed
+sbatch /home/projects/m26266/letma2026-ml-labs/slurm/prewarm_nodes.sbatch   # ~3 min, both nodes
+```
+
+After that, wait only until the kernel badge `Python 3 (ipykernel)` appears in the
+bottom-right status bar — the notebook is then fully interactive. The `Rendering… (61%)`
+indicator may stay at a partial value: it counts the whole notebook, and cells below the
+visible area are rendered lazily when you scroll.
+
+**On Hedy, the animations are automatically replaced by static filmstrips.** Euporie
+cannot play the JavaScript animation widget, so each animation cell draws a strip of six
+key frames instead — same content, no motion. This is detected at run time (the Hedy
+session profiler is available only on the cluster) and happens only there; on your own
+machine, in Jupyter or JupyterLab, the animations play normally.
 
 **Euporie quick reference** (verified against the installed version — navigate with `↑/↓`
 or `j/k`, `Home/End`, `PgUp/PgDn`; `Tab` cycles the focus between notebook, side pane and the

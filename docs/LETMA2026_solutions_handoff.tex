@@ -156,24 +156,56 @@ pip install -r /home/projects/m26266/letma2026-ml-labs/requirements.txt
 # copy the labs into YOUR home folder on Hedy (env/ excluded: the venvs are 5+ GB):
 rsync -a --exclude env /home/projects/m26266/letma2026-ml-labs/ ~/letma2026-ml-labs/
 
-# interactive GPU session (Slurm drops you ON the GPU node, no second ssh):
-srun --pty --account=m26266 --partition=gpu --reservation=test_mig_letma \
-     --nodelist=m-gpu[07-08] --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
-     --nodes=1 --ntasks=1 --cpus-per-task=8 --time=01:00:00 bash
+# GPU session on a MIG slice: ONE command allocates the slice, forwards X11
+# and drops you into an interactive shell ON the GPU node:
+salloc \
+    --account=m26266 \
+    --partition=gpu \
+    --reservation=test_mig_letma \
+    --nodelist=m-gpu[07-08] \
+    --gres=gpu:nvidia_h100_80gb_hbm3_1g.20gb:1 \
+    --nodes=1 \
+    --ntasks=1 \
+    --cpus-per-task=8 \
+    --time=01:00:00 \
+    bash -c '
+        NODE=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+        echo "Allocated job: $SLURM_JOB_ID on $NODE"
+        exec ssh -Y -C -t "$NODE" \
+            "srun --jobid=$SLURM_JOB_ID --overlap --ntasks=1 --pty bash -i"
+    '
+# release afterwards with: scancel <jobid>
 
 # on the GPU node, first CHECK YOUR SLICE - one MIG device with ~20 GB:
 nvidia-smi
 #   MIG devices:
 #   GPU  GI  CI  MIG |              Shared Memory-Usage
 #     0   3   0   0  |               9MiB / 20096MiB     <- your 1g.20gb slice
-# (if the MIG section is absent or shows another size, exit and resubmit the srun)
+# (if the MIG section is absent or shows another size, exit and resubmit the salloc)
 
-# open a notebook - either JupyterLab:
-cd ~/letma2026-ml-labs/notebooks/labs && jupyter lab
-# ...or Euporie, the notebook TUI (plain SSH session, no X11, no browser):
-euporie-notebook --kernel-name python3 \
-    ~/letma2026-ml-labs/notebooks/labs/lab_fno_solution.ipynb
+# open a notebook with Euporie, the notebook TUI (Hedy has no SSH port
+# forwarding, so there is no browser interface on the cluster; jupyter lab
+# remains the normal interface on the participants' own machines):
+cd ~/letma2026-ml-labs/notebooks/labs
+euporie-notebook --kernel-name python3 lab_fno_solution.ipynb
 \end{lstlisting}
+Launch time: about 5 seconds on a warmed node, 1--2 minutes on a cold one.
+Everything (euporie, jupyter, torch, numpy, matplotlib, ...) is paged in from the shared
+filesystem on the first launch of a node; the screen shows \texttt{Loading...} /
+\texttt{No Kernel} meanwhile --- this is not a freeze. \textbf{Before the session, warm up
+both nodes} (the Linux page cache is shared by all users of a node, so one run makes every
+participant's launch quick):
+
+\begin{lstlisting}
+ssh hedy   # no -Y needed here: this submits a batch job, nothing is displayed
+sbatch /home/projects/m26266/letma2026-ml-labs/slurm/prewarm_nodes.sbatch   # ~3 min, both nodes
+\end{lstlisting}
+
+Participants then wait only for the kernel badge \texttt{Python 3 (ipykernel)} to appear
+in the bottom-right status bar. The \texttt{Rendering... (61\%)} indicator may stay at a
+partial value: it counts the whole notebook, and cells below the visible area are rendered
+lazily when you scroll.
+
 Euporie quick reference (verified against the installed version): \texttt{Up/Down} (or
 \texttt{j/k}) select cells, \texttt{Home/End} first/last, \texttt{PgUp/PgDn} $\pm$5;
 \texttt{Enter} enters edit mode, \texttt{Esc} leaves it; \texttt{Ctrl+Enter} runs the selected
@@ -186,9 +218,10 @@ cycles the focus to the command bar for the rarer actions. Figures render inline
 graphics on Kitty/Sixel terminals, character previews elsewhere). The \texttt{python3} kernel
 is the activated venv's interpreter --- the validated one. The JAX extensions use the sibling
 venv \texttt{env/jax-hedy} (activate it the same way). To work on a GPU: \texttt{ssh -Y hedy},
-then the interactive session of the listing below starts with
-\texttt{srun --pty ... bash} (Slurm drops you on the GPU node --- one hop, no second
-\texttt{ssh}).
+then run the single \texttt{salloc} command of the listing below: it allocates the
+MIG slice, forwards X11 with \texttt{ssh -Y} into your allocated node, and drops you
+into an interactive shell there via \texttt{srun --pty} (which is why
+\texttt{srun --x11} is not needed here).
 
 \subsection*{Headless re-validation of the whole set}
 On Hedy, from the shared folder, one command re-executes all six lab notebooks plus the
