@@ -9,8 +9,8 @@ dynamics and **boundary-layer infrasound propagation** (wavefields, rays, hodogr
 **animated loss landscapes with multiple minima, optimizer races to the final loss, and the
 Dirichlet-energy collapse of deep GNNs**.
 
-You can either run this tutorial on Binder, on Colab or on your laptop (See **Quick start** section)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/noeleel/Tutorial_FNO_GNN_LETMA_AutumnSchool_2026.git/HEAD)
+You can either run this tutorial on Hedy (only during the Autumn School) Binder [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/noeleel/Tutorial_FNO_GNN_LETMA_AutumnSchool_2026.git/HEAD), on Colab (see notebooks, below, on the right of the board) or on your laptop (See **Quick start** section)
+
 | Lab | Question | Method | Data | Exercise | Colab Notebooks |
 |---|---|---|---|---|:---:|
 | **1 · FNO for Burgers** | Can a network learn a PDE's solution operator? | Fourier Neural Operator (Li et al., ICLR 2021) | 1-D viscous Burgers, generated on the fly | implement `SpectralConv1d` | [![Student](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/noeleel/Tutorial_FNO_GNN_LETMA_AutumnSchool_2026/blob/master/notebooks/labs/lab_fno_student.ipynb) <br> [![Solution](https://img.shields.io/badge/Colab-Solution-success?logo=googlecolab)](https://colab.research.google.com/github/noeleel/Tutorial_FNO_GNN_LETMA_AutumnSchool_2026/blob/master/notebooks/labs/lab_fno_solution.ipynb) |
