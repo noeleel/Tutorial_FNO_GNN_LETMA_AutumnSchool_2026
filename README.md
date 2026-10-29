@@ -245,25 +245,6 @@ letma2026-ml-labs/
 └── slurm/                         ← single-hop validation scripts (see PROCEDURE_TESTS.md)
 ```
 
-## Reproducibility status
-
-All notebooks were executed end-to-end **without a single error** on a GPU cluster
-(MIG 1g.20gb instance of an H100, Slurm reservation). Key reproduced numbers: Burgers test
-rel-$L^2$ 0.076 (zero-shot at $N{=}256$: 0.0735); the optimizer race now **reaches the trained
-loss** — Adam in 79 steps, SGD+momentum in 604, plain SGD budget-limited; infrasound
-(boundary-layer problem, $z\in[0,2]$ km, receivers at 2–11 km): test rel-$L^2$ 0.266, ray
-tracing and hodograph on absolute-time axes; GNN epicentral median 4.87 km
-vs MLP baseline 6.92 km, smoothing-operator spectrum $\rho=0.844$ predicting the oversmoothing
-pace;
-Darcy scale-up: a 123k-parameter FFNO2d, 200 epochs on 2304 pairs at 96×96, test rel-$L^2$
-0.0083 in 3 GPU minutes on a full H100 (measured; ~10 min on the MIG slice); learned x/y Fourier
-responses equal to 3%, as the isotropic law predicts. The two JAX extensions (full mirrors of
-Lab 1 and Lab 3 in JAX/Equinox/Optax) reproduce the same physics: FNO val rel-L2 0.0969 / test
-0.0867, zero-shot super-resolution 0.0889 at N=256, Adam arrives at the trained loss while SGD
-crawls, corner-plot best (modes 16, width 48, layers 6) 0.0896; GNN epicentral median 3.05 km vs
-7.04 km for the graph-free MLP baseline — CPU and GPU runs agree to 4 decimals (JAX
-determinism), while PyTorch↔JAX differ by seed noise only.
-
 ## License
 
 MIT — see [`LICENSE`](LICENSE). If you use these labs for teaching, an acknowledgement of the
