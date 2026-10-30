@@ -2,8 +2,14 @@
 
 <img src="assets/logos/amiad.png" width="120"/> <img src="assets/logos/cea.png" width="120"/> <img src="assets/logos/lmps.png" width="120"/> <img src="assets/logos/borelli.png" width="120"/>
 
-**Authors:** E. Noëlé$^{1, 2, 3}$, C. Millet$^{2, 4}$, F. Gatti$^3$, D. Clouteau$^3$<br>
-**Affiliations:** $^1$AMIAD, Pôle Recherche, France - $^2$CEA DAM DIF -  $^3$Université Paris-Saclay, CentraleSupélec, ENS Paris-Saclay, CNRS, LMPS — Laboratoire de Mécanique Paris-Saclay, 91190 Gif-sur-Yvette, France - $^4$Centre Borelli, ENS Paris-Saclay, Université Paris-Saclay<br>
+**Authors:** E. Noëlé (1, 2, 3), C. Millet (2, 4), F. Gatti (3), D. Clouteau (3)
+
+**Affiliations:**
+1. AMIAD, Pôle Recherche, France
+2. CEA DAM DIF
+3. Université Paris-Saclay, CentraleSupélec, ENS Paris-Saclay, CNRS, LMPS — Laboratoire de Mécanique Paris-Saclay, 91190 Gif-sur-Yvette, France
+4. Centre Borelli, ENS Paris-Saclay, Université Paris-Saclay
+   
 **Contact:** elodie.noele@polytechnique.edu
 
 Feel free to contact me if you have any questions. I'll try my 
