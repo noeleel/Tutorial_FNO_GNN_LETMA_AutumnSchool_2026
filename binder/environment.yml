@@ -1,0 +1,15 @@
+# Binder environment: the torch stack of requirements.txt, CPU only.
+# The JAX extensions (notebooks/extensions/jax_*.ipynb) are optional and NOT installed here.
+name: letma2026-ml-labs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy>=1.26
+  - matplotlib>=3.8
+  - pytorch>=2.1          # conda-forge resolves the CPU build on Binder (no CUDA driver)
+  - ipykernel>=6.0
+  - nbformat>=4.10
+  - pip
+  - pip:
+      - torch_geometric>=2.5   # pure Python since 2.3: no compiled extensions needed

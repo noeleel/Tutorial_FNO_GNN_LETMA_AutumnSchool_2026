@@ -24,7 +24,7 @@
 \vspace{-6mm}
 
 \section*{Overview}
-Three 30-minute labs, each a complete \emph{question $\rightarrow$ hypotheses $\rightarrow$ data $\rightarrow$ network $\rightarrow$ loss $\rightarrow$ evaluation} loop on geophysical data:
+Three labs, each a complete \emph{question $\rightarrow$ hypotheses $\rightarrow$ data $\rightarrow$ network $\rightarrow$ loss $\rightarrow$ evaluation} loop on geophysical data:
 \begin{center}
 \begin{tabular}{@{}llll@{}}
 \toprule
@@ -66,13 +66,13 @@ loss $L^*$; the two-minima experiment; the hyperparameter corner plot.
 the model trained at $N{=}64$ directly at $N{=}256$.
 \end{enumerate}
 
-\exo{F1}{5 min, checker + fallback}Implement the spectral convolution
+\exo{F1}{checker + fallback}Implement the spectral convolution
 $(Kv)(x)=\sum_{k<m} R[k]\,\hat v[k]\,e^{2\pi ikx}$: one real FFT, a mode-by-mode complex matrix
 product, one inverse real FFT. \emph{Question to answer:} why does keeping $m{=}16$ modes lose
 almost nothing on this data?
-\par\exo{F2}{5 min}Assemble the full forward pass
-$a(x)\to P \to$ blocks $\to Q \to u(x)$, $v_{\ell+1}=\mathrm{GELU}(K_\ell v_\ell + W_\ell v_\ell)$.
-\emph{Question:} where is the computation happening --- in physical space or in the learned latent
+\par\medskip\noindent\textbf{Question (forward pass).}\ The notebook assembles the full forward
+pass $a(x)\to P \to$ blocks $\to Q \to u(x)$, $v_{\ell+1}=\mathrm{GELU}(K_\ell v_\ell + W_\ell v_\ell)$:
+where is the computation happening --- in physical space or in the learned latent
 space of width 32?
 
 \textbf{Questions the experiments answer.} Does Adam reach the trained loss faster than SGD with
@@ -106,7 +106,7 @@ only --- the training/validation split is the instrument that catches it.
 \item \textbf{Evaluate on unseen atmospheres:} held-out profiles and all four receivers.
 \end{enumerate}
 
-\exo{F2}{4 min, checker + fallback}Implement \texttt{signal\_spectrum} (two NumPy calls) and
+\exo{F2}{checker + fallback}Implement \texttt{signal\_spectrum} (two NumPy calls) and
 check H4/H13 yourself: where does the energy of a recorded trace live in frequency, and how many
 Fourier time modes cover the band?
 
@@ -137,9 +137,9 @@ epoch by epoch.
 the azimuthal gap.
 \end{enumerate}
 
-\exo{G1}{6 min, checker + fallback}Implement the message and the forward pass of one
+\exo{G1}{checker + fallback}Implement the message and the forward pass of one
 message-passing layer (mean aggregation is provided by the base class).
-\par\exo{G2}{5 min}Assemble the full locator: encode $\rightarrow$ 4 layers $\rightarrow$
+\par\exo{G2}{checker + fallback}Assemble the full locator: encode $\rightarrow$ 4 layers $\rightarrow$
 mean-pool $\rightarrow$ decode the hypocentre.
 
 \textbf{Questions the experiments answer.} Why must the aggregation be a mean/sum (permutation

@@ -14,8 +14,8 @@
 
 \title{\vspace{-1.2cm}\textbf{LETMA 2026 Summer School}\\[2pt]
 \textbf{Machine Learning on Geophysical Data --- Labs: Solutions \& Expected Results}\\[6pt]
-\large Instructor handoff: the answers to the exercises and the numbers every run reproduces}
-\author{\small LETMA 2026 Summer School}
+\large The answers to the exercises and the numbers every run reproduces}
+\author{\small E.~No\"el\'e, Gatti, Lehmann, Millet, Clouteau\\ \small AMIAD, CEA, LMPS, Borelli\\ \small Contact: \texttt{elodie.noele@TODO.example}}
 \date{}
 
 \begin{document}
@@ -34,16 +34,17 @@ results can be shown live without re-running a cell.
 \begin{lstlisting}
 def forward(self, x):
     n = x.shape[-1]
-    xh = torch.fft.rfft(x, dim=1, norm='ortho')       # (B, C, N//2+1)
+    xh = torch.fft.rfft(x, dim=-1, norm='ortho')      # (B, C, N//2+1)
     m = min(self.modes, xh.shape[-1])                 # truncation (H7)
     out = torch.einsum('bik,iok->bok', xh[..., :m], self.weight[..., :m])
     return torch.fft.irfft(out, n=n, norm='ortho')    # back to physical space
 \end{lstlisting}
 \textbf{Answer to the question.} Keeping $m=16$ modes loses almost nothing because the target
-fields' energy is concentrated in the first Fourier modes (H7, checked on data): mode $m=16$
-already reconstructs a target to $\approx 0.3\%$ relative error.
+fields' energy is concentrated in the first Fourier modes (H7, checked on data): $m=16$ keeps
+$99.8\%$ of the mean spectral energy ($19$ modes reach $99.9\%$) and reconstructs a target to
+$\approx 3\%$ relative error --- still small next to the $\approx 8\%$ test error.
 
-\subsection*{Exercise F2 (forward pass)}
+\subsection*{Question: where does the computation happen?}
 Lift $a(x)\oplus x$ to $w=32$ channels ($P$), then four blocks
 $v_{\ell+1}=\mathrm{GELU}(K_\ell v_\ell + W_\ell v_\ell)$, then $Q$ (width $128$) back to one
 channel. \textbf{Answer:} the computation happens in the learned 32-channel latent space
@@ -59,7 +60,7 @@ zero-shot super-resolution $N{=}64\to N{=}256$ & $0.073$ (no retraining)\\
 optimizer race to $L^*$ & Adam \textbf{79 steps}, SGD+momentum \textbf{604 steps},\\
  & plain SGD still far above $L^*$ after 6000 steps\\
 two-seed minima & two distinct minima, three Adam runs fall in separate basins\\
-corner plot (best of 20 configs, 25 epochs) & modes 16, width 48, 6 layers, proj 128 $\to$ $0.090$\\
+corner plot (best of 20 configs, 25 epochs) & modes 16, width 48, 6 layers, proj 128 $\to$ $0.097$\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -80,14 +81,17 @@ whole band --- exactly the truncation the factorized operator makes (H13).
 \begin{center}
 \begin{tabular}{@{}ll@{}}
 \toprule
-demo atmosphere & rays return to the ground ($\approx$19 arrivals within 11 km);\\
+demo atmosphere & $c_\mathrm{eff}$ $323.8 \to 361.0$ m/s; 10 ground arrivals\\
+ & within 11 km;\\
  & hodograph arrivals at $t = r/c_\mathrm{ref} + $ wavelet delay\\
-training (240 epochs, 200 atmospheres) & validation rel-$L^2 \approx 0.30$\\
-test (28 unseen atmospheres) & mean $0.266$, worst $0.597$\\
-loss family & rel-$L^2$ better than MSE on validation (quiet atmospheres served)\\
-overfitting demo (8 atmospheres) & train $0.56$ vs validation $1.31$ (gap $\times 2$)\\
-optimizer race & Adam reaches $L^*$ in $\approx 250$ steps; fixed-step methods\\
- & remain near $1.0$ (near-silence initialization) after 4000 steps\\
+training (240 epochs, 200 atmospheres) & validation rel-$L^2 = 0.212$ (145,345 parameters)\\
+test (28 unseen atmospheres) & mean $0.336$, worst $0.840$\\
+loss family (60 epochs) & rel-$L^2$ $0.276$ vs MSE $0.301$\\
+ & (rel-$L^2$ with aggressive $\lambda=1$: $0.288$)\\
+overfitting demo (8 atmospheres) & train $0.476$ vs validation $1.125$ (gap $\times 2$)\\
+optimizer race (3 optimizers) & Adam: $1.00 \to 0.199$ in 153 steps ($L^* = 0.175$);\\
+ & SGD and SGD+momentum remain near $1.0$ after 4000 steps\\
+ & (near-silence initialization)\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -124,8 +128,9 @@ graph-free MLP baseline & median $6.92$ km (pays for every missing station)\\
 \bottomrule
 \end{tabular}
 \end{center}
-\textbf{Answers to the questions.} The aggregation must be a mean/sum because only those
-treat neighbours unordered (permutation invariance). The GNN survives station dropout because
+\textbf{Answers to the questions.} The aggregation must be permutation-invariant (mean, sum or
+max): it treats neighbours as an unordered set, whereas concatenating neighbour features in a
+fixed order would change when stations are relabeled. The GNN survives station dropout because
 the graph and the masked pooling adapt to any node count; the fixed-size MLP has one slot per
 station and loses the information of every station that is down. Node states become
 interchangeable when the Dirichlet energy collapses: one scalar per depth is the diagnostic.

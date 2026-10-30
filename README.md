@@ -1,8 +1,16 @@
 # LETMA 2026 — Machine Learning on Geophysical Data: three hands-on labs
 
+<img src="assets/logos/amiad.png" width="120"/> <img src="assets/logos/cea.png" width="120"/> <img src="assets/logos/lmps.png" width="120"/> <img src="assets/logos/borelli.png" width="120"/>
+
+**Authors:** E. Noëlé$^{1, 2, 3}$, C. Millet$^{2, 4}$, F. Gatti$^3$, D. Clouteau$^3$<br>
+**Affiliations:** $^1$AMIAD, Pôle Recherche, France - $^2$CEA DAM DIF -  $^3$Université Paris-Saclay, CentraleSupélec, ENS Paris-Saclay, CNRS, LMPS — Laboratoire de Mécanique Paris-Saclay, 91190 Gif-sur-Yvette, France - $^4$Centre Borelli, ENS Paris-Saclay, Université Paris-Saclay<br>
+**Contact:** elodie.noele@polytechnique.edu
+
+Feel free to contact me if you have any questions. I'll try my 
+
 **Fourier Neural Operators (FNO) · Factorized FNO for infrasound (FFNO) · Graph Neural Networks (GNN) · a Darcy-flow scale-up**
 
-Three self-contained, 30-minute lab notebooks for a summer-school audience  every assumption is
+Three self-contained lab notebooks: every assumption is
 stated as a numbered hypothesis (H1, H2, …) before it is used, every exercise is fail-safe
 (automatic checker + reference fallback), and every lab is driven by animations — from PDE
 dynamics and **boundary-layer infrasound propagation** (wavefields, rays, hodographs) to
@@ -22,12 +30,14 @@ You can either run this tutorial on Hedy (only during the Autumn School) Binder 
 
 Each lab exists in two versions: `*_student.ipynb` (exercises with `TODO`s) and
 `*_solution.ipynb` (executed end-to-end, all figures and animations embedded — open it to see
-everything without running a single cell).
+everything without running a single cell). Each notebook has a core path and parts marked
+*optional* that go deeper (derivations, extra experiments); skipping them breaks nothing that
+follows. Every lab ends with a **Going further** section of references.
 
 **Handouts.** [`docs/LETMA2026_labs_handout.pdf`](docs/LETMA2026_labs_handout.pdf) — a printable
 summary of what will be done in each lab, with the scientific question and the exercises.
-[`docs/LETMA2026_solutions_handoff.pdf`](docs/LETMA2026_solutions_handoff.pdf) — the instructor
-handoff: exercise solutions and the numbers every run reproduces (LaTeX sources alongside).
+[`docs/LETMA2026_solutions_handoff.pdf`](docs/LETMA2026_solutions_handoff.pdf) — the exercise
+solutions and the numbers every run reproduces (LaTeX sources alongside).
 
 ---
 
@@ -43,7 +53,7 @@ gives two different minima; three Adam initializations each fall into their own 
 | ![Distributions](docs/images/lab1_distributions.png) | ![Multiple minima](docs/images/lab1_multiple_minima.png) |
 
 The single-minimum view of the same landscape, with four optimizers racing **to the final trained
-loss**: Adam arrives in 83 steps, momentum in 463, plain fixed-step SGD never leaves the plateau.
+loss**: Adam arrives in 79 steps, momentum in 604, plain fixed-step SGD never leaves the plateau.
 A hyperparameter **corner plot** (modes, width, depth, projection width) and a **3-D view**
 complete the section. The payoff of Fourier layers: parameters live on **modes, not grid
 points**, so the model trained at $N=64$ evaluates zero-shot at $N=256$ with the same error.
@@ -91,8 +101,9 @@ prediction-improving animation, the **learned Fourier weights dissected layer by
 (the x/y responses match at ratio 1.03, exactly as the isotropy of the law predicts), and a
 worst-case gallery. The executed solution trained the full budget **in 3 minutes on an H100
 (~10 minutes on the school's MIG 1g.20gb slice)** and reaches test rel-$L^2$ **0.0083** —
-*better* than the ~0.01 the operator-learning literature reports for this benchmark, from a
-model smaller than the Burgers lab network. On a laptop CPU set `DARCY_EPOCHS=10`–`20`, or read
+comparable in magnitude to published FNO Darcy errors, on a different dataset (the repository's
+own 96×96 finite-volume generator, not the Li et al. benchmark), from a model smaller than the
+Burgers lab network. On a laptop CPU set `DARCY_EPOCHS=10`–`20`, or read
 the executed solution.
 
 | | | |
@@ -108,7 +119,7 @@ interpolation) live **inside the executed solution notebooks**; a few legacy GIF
 ## Quick start
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/noeleel/Tutorial_FNO_GNN_LETMA_AutumnSchool_2026.git letma2026-ml-labs
 cd letma2026-ml-labs
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt          # CPU is enough; GPU optional
@@ -124,6 +135,19 @@ at N=64 and N=256) and `data/seismic_jax.npz` (0.4 MB: Lab 3's seismic events as
 so they need **neither torch nor PyG**, only JAX (regenerate the files with
 `python scripts/make_burgers_npz.py` and `python scripts/make_seismic_npz.py` in the PyTorch
 environment).
+
+**Binder and Colab.** Binder builds [`binder/environment.yml`](binder/environment.yml): the
+torch stack of `requirements.txt` on CPU (PyTorch, PyTorch Geometric, NumPy, Matplotlib). The
+JAX extensions are optional and are not installed there (JAX is in the commented-out section of
+`requirements.txt`; install it in a separate environment). On Colab, every notebook's first
+code cell detects the Colab runtime, clones this repository into `/content` once, installs the
+only packages Colab lacks (`torch_geometric` for Lab 3, `equinox`/`optax` for the JAX
+extensions) and points the notebook at the clone; nothing of this runs anywhere else. Labs 1
+and 3 run on Colab's free CPU in a few minutes each; Lab 2's training and the **Darcy scale-up
+are slow on the free CPU** — select a GPU runtime (*Runtime → Change runtime type*), or for the
+scale-up set `DARCY_EPOCHS=10`–`20`.
+Animations play as JavaScript widgets on a laptop, on Binder and on Colab; only on Hedy, where
+Euporie cannot play them, they are shown as a static six-frame filmstrip.
 
 ## On the Hedy cluster (school sessions)
 
@@ -238,7 +262,7 @@ extensions, separate venv advised).
 | Darcy scale-up (200 epochs) | hours — set `DARCY_EPOCHS=10`–`20` or read the solution | **3.0 min** (full H100) / ~10 min (`MIG 1g.20gb`) |
 | JAX extensions (full FNO + GNN mirrors) | ≈ 8 / 6 min on CPU | **128 s + 93 s** (solution notebooks; students ≈ same) |
 
-Nothing requires internet access at run time. Results are deterministic (fixed seeds); GPU and
+Nothing requires internet access at run time (except the one-time clone on Colab). Results are deterministic (fixed seeds); GPU and
 CPU runs agree to ~3 decimals (e.g. Darcy test rel-L2 0.0405 CPU vs 0.0404 GPU).
 
 ## Repository layout
@@ -250,7 +274,8 @@ letma2026-ml-labs/
 │   ├── setup_participant.sh      ← one-time participant setup (Hedy or laptop)
 │   ├── make_burgers_npz.py        ← regenerates data/burgers_jax.npz  (torch env, run once)
 │   └── make_seismic_npz.py        ← regenerates data/seismic_jax.npz  (torch env, run once)
-├── INSTRUCTOR_GUIDE.md           ← pacing, checkpoints, fallbacks, cluster notes
+├── binder/environment.yml        ← Binder build (torch stack, CPU; JAX not included)
+├── assets/logos/                 ← partner logos shown in the notebook headers
 ├── requirements.txt               ← install file (+ optional extras commented)
 ├── data/
 │   ├── darcy96_big.pt            ← pre-generated 96×96 Darcy database (2304 pairs, 85 MB, fp16)
@@ -261,11 +286,35 @@ letma2026-ml-labs/
 ├── gnn_tuto/                      ← seismic simulator, graph construction, GNN models, checkers
 ├── hedy_euporie/                  ← tiny optional session-profiler used by the labs
 ├── notebooks/
-│   ├── labs/                      ← the three 30-minute labs (student + executed solution)
+│   ├── labs/                      ← the three labs (student + executed solution)
 │   └── extensions/                ← Darcy scale-up + the two full JAX reimplementations
-├── docs/images/                   ← README illustrations (extracted from the executed solutions)
+├── docs/                         ← handouts (PDF + LaTeX), README illustrations
 └── slurm/                         ← single-hop validation scripts (see PROCEDURE_TESTS.md)
 ```
+
+## Going further
+
+- **Lab 1 (FNO):** Z. Li et al., *Fourier Neural Operator for Parametric Partial Differential
+  Equations*, ICLR 2021 ([arXiv:2010.08895](https://arxiv.org/abs/2010.08895)); N. Kovachki et
+  al., *Neural Operator: Learning Maps Between Function Spaces with Applications to PDEs*, JMLR
+  2023 ([arXiv:2108.08481](https://arxiv.org/abs/2108.08481)); H. Li et al., *Visualizing the
+  Loss Landscape of Neural Nets*, NeurIPS 2018 ([arXiv:1712.09913](https://arxiv.org/abs/1712.09913));
+  the [neuraloperator](https://github.com/neuraloperator/neuraloperator) library.
+- **Lab 2 (FFNO, infrasound):** A. Tran et al., *Factorized Fourier Neural Operators*, ICLR
+  2023 ([arXiv:2111.13802](https://arxiv.org/abs/2111.13802)); A. Le Pichon, E. Blanc,
+  A. Hauchecorne (eds.), *Infrasound Monitoring for Atmospheric Studies*, 2nd ed., Springer
+  (2019); V. E. Ostashev, D. K. Wilson, *Acoustics in Moving Inhomogeneous Media*, 2nd ed., CRC
+  Press (2015).
+- **Lab 3 (GNN):** J. Gilmer et al., *Neural Message Passing for Quantum Chemistry*, ICML 2017
+  ([arXiv:1704.01212](https://arxiv.org/abs/1704.01212)); T. K. Rusch, M. M. Bronstein,
+  S. Mishra, *A Survey on Oversmoothing in Graph Neural Networks*, 2023
+  ([arXiv:2303.10993](https://arxiv.org/abs/2303.10993)); M. P. A. van den Ende, J.-P. Ampuero,
+  *Automated Seismic Source Characterization Using Deep Graph Neural Networks*, GRL 2020.
+- **A related tutorial:** [Tutorial_GNN_Summer_School_CEA_EDF_INRIA2025](https://github.com/noeleel/Tutorial_GNN_Summer_School_CEA_EDF_INRIA2025) — given at the CEA–EDF–INRIA summer school (June 2025):
+  dynamic graph neural networks for seismic characterization, with a dedicated study of
+  oversmoothing. A natural next step after Lab 3.
+
+Each notebook ends with a longer, annotated **Going further** list.
 
 ## License
 

@@ -96,5 +96,16 @@ class SessionProfiler:
             print('PyTorch CUDA peak allocated/reserved:',cuda_metrics['torch_peak_allocated_mib'], '/',cuda_metrics['torch_peak_reserved_mib'],'MiB')
         return data
 
+HEDY_PROJECT_SPACE = Path('/home/projects/m26266')     # exists on the Hedy cluster only
+
+def on_hedy():
+    """True on Hedy (login and compute nodes). HEDY_FORCE=1/0 overrides the detection."""
+    forced = os.environ.get('HEDY_FORCE')
+    return forced == '1' if forced in ('0', '1') else HEDY_PROJECT_SPACE.is_dir()
+
 def begin_session(label, *, backend='torch'):
+    # The package ships with the repository, so importing it succeeds anywhere; refusing here
+    # keeps the notebooks' HEDY_SESSION at None on laptops, Binder and Colab (JS animations).
+    if not on_hedy():
+        raise RuntimeError('not on the Hedy cluster: session profiling disabled')
     return SessionProfiler(label, backend=backend)

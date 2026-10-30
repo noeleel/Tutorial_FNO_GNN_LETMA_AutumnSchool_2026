@@ -55,7 +55,7 @@ def sample_ceff(n: int, config: Configuration, seed: int = 42):
     layer (0-2 km). Each profile combines: a random surface value, a
     large-scale vertical trend (inversions bend rays down, lapse bends them
     up), a low-level bend, random Gaussian perturbations concentrated in the
-    boundary layer (2-5 bumps of amplitude ~N(0, 3.5 m/s), widths 0.1-0.5 km)
+    boundary layer (2-5 bumps of amplitude ~N(0, 4 m/s), widths 0.1-0.5 km)
     representing shear layers and thermals, and a small short-correlation
     jitter (~0.5 m/s, ~100 m scale) representing frozen turbulence.
     """
