@@ -298,18 +298,25 @@ letma2026-ml-labs/
   Equations*, ICLR 2021 ([arXiv:2010.08895](https://arxiv.org/abs/2010.08895)); N. Kovachki et
   al., *Neural Operator: Learning Maps Between Function Spaces with Applications to PDEs*, JMLR
   2023 ([arXiv:2108.08481](https://arxiv.org/abs/2108.08481)); H. Li et al., *Visualizing the
-  Loss Landscape of Neural Nets*, NeurIPS 2018 ([arXiv:1712.09913](https://arxiv.org/abs/1712.09913));
-  the [neuraloperator](https://github.com/neuraloperator/neuraloperator) library.
+  Loss Landscape of Neural Nets*, NeurIPS 2018 ([arXiv:1712.09913](https://arxiv.org/abs/1712.09913)).
 - **Lab 2 (FFNO, infrasound):** A. Tran et al., *Factorized Fourier Neural Operators*, ICLR
-  2023 ([arXiv:2111.13802](https://arxiv.org/abs/2111.13802)); A. Le Pichon, E. Blanc,
-  A. Hauchecorne (eds.), *Infrasound Monitoring for Atmospheric Studies*, 2nd ed., Springer
-  (2019); V. E. Ostashev, D. K. Wilson, *Acoustics in Moving Inhomogeneous Media*, 2nd ed., CRC
-  Press (2015).
+  2023 ([arXiv:2111.13802](https://arxiv.org/abs/2111.13802)); M. D. Collins, *A split-step Padé
+  solution for the parabolic equation method*, J. Acoust. Soc. Am. 93, 1736–1742 (1993)
+  ([doi](https://doi.org/10.1121/1.406739)); D. P. Drob, J. M. Picone, M. Garcés, *Global
+  morphology of infrasound propagation*, J. Geophys. Res. 108(D21) (2003)
+  ([doi](https://doi.org/10.1029/2002JD003307)).
 - **Lab 3 (GNN):** J. Gilmer et al., *Neural Message Passing for Quantum Chemistry*, ICML 2017
-  ([arXiv:1704.01212](https://arxiv.org/abs/1704.01212)); T. K. Rusch, M. M. Bronstein,
-  S. Mishra, *A Survey on Oversmoothing in Graph Neural Networks*, 2023
-  ([arXiv:2303.10993](https://arxiv.org/abs/2303.10993)); M. P. A. van den Ende, J.-P. Ampuero,
+  ([arXiv:1704.01212](https://arxiv.org/abs/1704.01212)); K. Oono, T. Suzuki, *Graph Neural
+  Networks Exponentially Lose Expressive Power for Node Classification*, ICLR 2020
+  ([arXiv:1905.10947](https://arxiv.org/abs/1905.10947)); M. P. A. van den Ende, J.-P. Ampuero,
   *Automated Seismic Source Characterization Using Deep Graph Neural Networks*, GRL 2020.
+- **Fourier neural operators for seismic waves:** F. Lehmann, F. Gatti, M. Bertin, D. Clouteau,
+  *3D elastic wave propagation with a Factorized Fourier Neural Operator (F-FNO)*, CMAME 420,
+  116718 (2024) ([doi](https://doi.org/10.1016/j.cma.2023.116718)); F. Lehmann, F. Gatti,
+  D. Clouteau, *Multiple-input Fourier Neural Operator (MIFNO) for source-dependent 3D
+  elastodynamics*, JCP 527, 113813 (2025) ([doi](https://doi.org/10.1016/j.jcp.2025.113813));
+  F. Lehmann et al., *the HEMEW<sup>S</sup>-3D database*, ESSD 16, 3949–3972 (2024)
+  ([doi](https://doi.org/10.5194/essd-16-3949-2024)).
 - **A related tutorial:** [Tutorial_GNN_Summer_School_CEA_EDF_INRIA2025](https://github.com/noeleel/Tutorial_GNN_Summer_School_CEA_EDF_INRIA2025) — given at the CEA–EDF–INRIA summer school (June 2025):
   dynamic graph neural networks for seismic characterization, with a dedicated study of
   oversmoothing. A natural next step after Lab 3.
