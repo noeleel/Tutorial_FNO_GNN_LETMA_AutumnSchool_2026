@@ -1,6 +1,6 @@
 # LETMA 2026 — Machine Learning on Geophysical Data: three hands-on labs
 
-<img src="assets/logos/amiad.png" width="120"/> <img src="assets/logos/cea.png" width="120"/> <img src="assets/logos/lmps.png" width="120"/> <img src="assets/logos/borelli.png" width="120"/>
+<img src="/assets/logos/amiad.png" width="120"/> <img src="/assets/logos/cea.png" width="120"/> <img src="/assets/logos/lmps.png" width="120"/> <img src="/assets/logos/borelli.png" width="120"/>
 
 **Authors:** E. Noëlé (1, 2, 3), C. Millet (2, 4), F. Gatti (3), D. Clouteau (3)
 
